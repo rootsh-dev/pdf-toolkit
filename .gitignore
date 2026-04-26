@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.env
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# VS Code / IDE
+.vscode/
+.idea/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Optional: Ignore test PDFs/documents used during local development
+# (Uncomment below if you don't want to commit random test files)
+# *.pdf
+# *.docx
+# *.pptx
+# *.jpg
+# *.png
