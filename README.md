@@ -36,7 +36,7 @@ Unlike standard open-source tools that often mangle complex layouts, this toolki
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/amol2600/pdf-toolkit.git
+   git clone https://github.com/rootsh-dev/pdf-toolkit.git
    cd pdf-toolkit
    ```
 
