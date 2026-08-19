@@ -1,0 +1,102 @@
+name: Build Cross-Platform Executables
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: pdf-toolkit-windows.exe
+            asset_path: dist/pdf_toolkit.exe
+            extra_flags: "--include-package=comtypes --windows-console-mode=disable"
+          - os: ubuntu-latest
+            artifact_name: pdf-toolkit-linux
+            asset_path: dist/pdf_toolkit
+            extra_flags: ""
+          - os: macos-latest
+            artifact_name: pdf-toolkit-macos
+            asset_path: dist/pdf_toolkit.app
+            extra_flags: "--macos-create-app-bundle"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka ordered-set zstandard
+
+      # Linux needs patchelf for standalone/onefile builds
+      - name: Install patchelf (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y patchelf
+
+      # --- COMPILE TO NATIVE MACHINE CODE ---
+      # Nuitka translates Python -> C -> a real compiled binary.
+      # There is no bytecode or source shipped inside the exe,
+      # which makes reverse engineering far harder than obfuscation.
+      # Flags below are verified against the actual pdf_toolkit.py imports.
+      - name: Build with Nuitka
+        shell: bash
+        run: |
+          python -m nuitka \
+            --onefile --standalone --assume-yes-for-downloads \
+            --output-dir=dist --output-filename=pdf_toolkit --remove-output \
+            --enable-plugin=tk-inter \
+            --enable-plugin=numpy \
+            --include-package=fitz \
+            --include-package=pypdfium2 \
+            --include-package-data=pypdfium2 \
+            --include-package=cryptography \
+            --include-package=PIL \
+            --include-package=cv2 \
+            --include-package=pdfminer \
+            --include-package=pdfplumber \
+            --include-package=docx \
+            --include-package=pptx \
+            --include-package=pdf2docx \
+            --include-package=reportlab \
+            --include-package=xlsxwriter \
+            --include-package=lxml \
+            --include-package=fontTools \
+            ${{ matrix.extra_flags }} \
+            pdf_toolkit.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.asset_path }}
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
