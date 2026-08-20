@@ -13,16 +13,20 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact_name: pdf-toolkit-windows.exe
-            asset_path: dist/pdf_toolkit.exe
+            asset_name: pdf-toolkit-${{ github.ref_name }}-windows-x64.exe
+            build_path: dist/pdf_toolkit.exe
             extra_flags: "--include-package=comtypes --windows-console-mode=disable"
           - os: ubuntu-latest
-            artifact_name: pdf-toolkit-linux
-            asset_path: dist/pdf_toolkit
+            asset_name: pdf-toolkit-${{ github.ref_name }}-linux-x64
+            build_path: dist/pdf_toolkit
             extra_flags: ""
           - os: macos-latest
-            artifact_name: pdf-toolkit-macos
-            asset_path: dist/pdf_toolkit.app
+            asset_name: pdf-toolkit-${{ github.ref_name }}-macos-arm64.zip
+            build_path: dist/pdf_toolkit.app
+            extra_flags: "--macos-create-app-bundle"
+          - os: macos-13
+            asset_name: pdf-toolkit-${{ github.ref_name }}-macos-x64.zip
+            build_path: dist/pdf_toolkit.app
             extra_flags: "--macos-create-app-bundle"
 
     runs-on: ${{ matrix.os }}
@@ -74,11 +78,21 @@ jobs:
             ${{ matrix.extra_flags }} \
             pdf_toolkit.py
 
+      # GitHub release assets must be single files, so the .app bundle (a directory) gets zipped
+      - name: Zip macOS app bundle
+        if: startsWith(matrix.os, 'macos')
+        run: cd dist && zip -r "${{ matrix.asset_name }}" pdf_toolkit.app
+
+      - name: Rename build output to final asset name (Windows/Linux)
+        if: "!startsWith(matrix.os, 'macos')"
+        shell: bash
+        run: cp "${{ matrix.build_path }}" "dist/${{ matrix.asset_name }}"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.asset_path }}
+          name: ${{ matrix.asset_name }}
+          path: dist/${{ matrix.asset_name }}
 
   release:
     needs: build
