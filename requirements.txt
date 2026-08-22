@@ -1,4 +1,4 @@
-﻿cffi==2.0.0
+cffi==2.0.0
 charset-normalizer==3.4.7
 comtypes==1.4.16; sys_platform == "win32"
 cryptography==47.0.0
@@ -10,7 +10,7 @@ opencv-python-headless==4.13.0.92
 pdf2docx==0.5.12
 pdfminer.six==20251230
 pdfplumber==0.11.9
-pillow==12.2.0
+pillow==12.3.0
 pycparser==3.0
 PyMuPDF==1.27.2.3
 pypdf==6.10.2
